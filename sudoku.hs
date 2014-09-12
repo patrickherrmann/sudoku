@@ -103,7 +103,7 @@ findSolution bs =
     Nothing -> findSolution $ bs >>= possibilities
 
 solve :: Board -> Maybe Board
-solve = findSolution . possibilities . markGivenCertainties
+solve b = findSolution [markGivenCertainties b]
 
 main = do
    args <- getArgs
