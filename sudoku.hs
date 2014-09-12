@@ -1,6 +1,7 @@
 import Data.List
 import Data.List.Split
 import Control.Applicative
+import Control.Monad
 import System.Environment
 import Data.Char
 import qualified Data.Map as Map
@@ -99,7 +100,7 @@ findSolution [] = Nothing
 findSolution bs =
   case find solved bs of
     Just s  -> Just s
-    Nothing -> findSolution . concat . map possibilities $ bs
+    Nothing -> findSolution $ bs >>= possibilities
 
 solve :: Board -> Maybe Board
 solve = findSolution . possibilities . markGivenCertainties
