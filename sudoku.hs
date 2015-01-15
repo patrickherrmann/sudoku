@@ -26,15 +26,14 @@ emptyBoard = Map.fromList . zip locs $ repeat vals
 
 showStatus :: Status -> Char
 showStatus []         = 'X'
-showStatus ((V v):[]) = head $ show v
+showStatus [V v] = head $ show v
 showStatus _          = '.'
 
 showBoard :: Board -> String
 showBoard = unlines
-          . concat
-          . intersperse [""]
+          . intercalate [""]
           . chunksOf 3
-          . (map $ intersperse ' ' . unwords . chunksOf 3)
+          . map (intersperse ' ' . unwords . chunksOf 3)
           . chunksOf 9
           . map showStatus
           . Map.elems
@@ -86,7 +85,7 @@ certain :: Status -> Bool
 certain = (==1) . length
 
 setGivens :: Board -> Board
-setGivens board = foldr (\(l, s) -> \b -> set b l $ head s) emptyBoard givens
+setGivens board = foldr (\(l, s) b -> set b l $ head s) emptyBoard givens
   where givens = filter (certain . snd) $ Map.assocs board
 
 solved :: Board -> Bool
