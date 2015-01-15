@@ -45,7 +45,10 @@ readStatus 'X' = []
 readStatus v   = [V (read [v] :: Int)]
 
 readBoard :: String -> Board
-readBoard = Map.fromList . zip locs . map readStatus . filter (not . isSpace)
+readBoard = Map.fromList
+          . zip locs
+          . map readStatus
+          . filter (not . isSpace)
 
 sameBox :: Loc -> Loc -> Bool
 sameBox (R r1, C c1) (R r2, C c2) =
@@ -77,17 +80,17 @@ set b loc v =
   foldr (eliminate v) (Map.insert loc [v] b) $ relatedLocs loc
 
 uncertain :: Status -> Bool
-uncertain s = length s > 1
+uncertain = (>1) . length
 
 certain :: Status -> Bool
-certain s = length s == 1
+certain = (==1) . length
 
 setGivens :: Board -> Board
 setGivens board = foldr (\(l, s) -> \b -> set b l $ head s) emptyBoard givens
   where givens = filter (certain . snd) $ Map.assocs board
 
 solved :: Board -> Bool
-solved = all ((==1) . length) . Map.elems
+solved = all certain . Map.elems
 
 contradictory :: Board -> Bool
 contradictory = any null . Map.elems
@@ -96,7 +99,7 @@ guesses :: Board -> [Board]
 guesses b = case fu of
               Nothing -> []
               Just (l, s) -> filter (not . contradictory) (set b l <$> s)
-  where fu = find ((>1) . length . snd) $ Map.assocs b
+  where fu = find (uncertain . snd) $ Map.assocs b
 
 
 solutions :: Board -> [Board]
