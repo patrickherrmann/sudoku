@@ -100,7 +100,6 @@ guesses b = case fu of
     Just (l, s) -> filter (not . contradictory) (set b l <$> s)
   where fu = find (uncertain . snd) $ Map.assocs b
 
-
 solutions :: Board -> [Board]
 solutions b = if solved b
                 then [b]
@@ -109,18 +108,26 @@ solutions b = if solved b
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
 
+printUsage :: IO ()
+printUsage = do
+  putStrLn "Usage:"
+  putStrLn "   sudoku <puzzle file>"
+
 printBoard :: Board -> IO ()
-printBoard b = putStrLn . showBoard $ b
+printBoard = putStrLn . showBoard
 
 printSolution :: Board -> IO ()
 printSolution b = case solution of
     Nothing -> putStrLn "No Solutions"
-    Just s  -> putStrLn . showBoard $ s
+    Just s  -> printBoard s
   where solution = solve . setGivens $ b
 
-main = do
-   args <- getArgs
-   input <- readFile $ head args
-   let board = readBoard input
-   printBoard board
-   printSolution board
+cli :: [String] -> IO ()
+cli [f] = do
+  input <- readFile f
+  let board = readBoard input
+  printBoard board
+  printSolution board
+cli _ = printUsage
+
+main = getArgs >>= cli
