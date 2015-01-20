@@ -96,8 +96,8 @@ contradictory = any null . Map.elems
 
 guesses :: Board -> [Board]
 guesses b = case fu of
-              Nothing -> []
-              Just (l, s) -> filter (not . contradictory) (set b l <$> s)
+    Nothing -> []
+    Just (l, s) -> filter (not . contradictory) (set b l <$> s)
   where fu = find (uncertain . snd) $ Map.assocs b
 
 
@@ -109,12 +109,18 @@ solutions b = if solved b
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
 
+printBoard :: Board -> IO ()
+printBoard b = putStrLn . showBoard $ b
+
+printSolution :: Board -> IO ()
+printSolution b = case solution of
+    Nothing -> putStrLn "No Solutions"
+    Just s  -> putStrLn . showBoard $ s
+  where solution = solve . setGivens $ b
+
 main = do
    args <- getArgs
    input <- readFile $ head args
    let board = readBoard input
-   putStrLn . showBoard $ board
-   let solution = solve . setGivens $ board
-   case solution of
-      Nothing -> putStrLn "No Solutions"
-      Just s  -> putStrLn . showBoard $ s
+   printBoard board
+   printSolution board
