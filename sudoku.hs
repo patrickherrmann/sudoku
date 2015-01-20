@@ -38,16 +38,21 @@ showBoard = unlines
           . map showStatus
           . Map.elems
 
-readStatus :: Char -> Status
-readStatus '.' = vals
-readStatus 'X' = []
-readStatus v   = [V (read [v] :: Int)]
+readStatus :: Char -> Either String Status
+readStatus '.' = Right vals
+readStatus c   = case index of
+    Nothing -> Left $ "Invalid input " ++ [c]
+    Just i  -> Right [V $ i + 1]
+  where statusChars = ['1'..'9']
+        index = elemIndex c statusChars
 
-readBoard :: String -> Board
-readBoard = Map.fromList
-          . zip locs
-          . map readStatus
-          . filter (not . isSpace)
+readBoard :: String -> Either String Board
+readBoard cs = if length chars == length locs
+    then case sequence . map readStatus $ chars of
+      Left err -> Left err
+      Right ss -> Right . Map.fromList . zip locs $ ss
+    else Left "Input must have one character per cell"
+  where chars = filter (not . isSpace) cs
 
 sameBox :: Loc -> Loc -> Bool
 sameBox (R r1, C c1) (R r2, C c2) =
@@ -126,8 +131,11 @@ cli :: [String] -> IO ()
 cli [f] = do
   input <- readFile f
   let board = readBoard input
-  printBoard board
-  printSolution board
+  case board of
+    Left err -> putStrLn err
+    Right b  -> do
+      printBoard b
+      printSolution b
 cli _ = printUsage
 
 main = getArgs >>= cli
