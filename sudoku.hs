@@ -30,13 +30,11 @@ showStatus [V v] = head $ show v
 showStatus _          = '.'
 
 showBoard :: Board -> String
-showBoard = unlines
-          . intercalate [""]
-          . chunksOf 3
-          . map (intersperse ' ' . unwords . chunksOf 3)
-          . chunksOf 9
-          . map showStatus
-          . Map.elems
+showBoard = unlines . addBlankLines . map formatLine . getLines . statuses
+  where addBlankLines = intercalate [""] . chunksOf 3
+        formatLine = intersperse ' ' . unwords . chunksOf 3
+        getLines = chunksOf 9
+        statuses = map showStatus . Map.elems
 
 readStatus :: Char -> Either String Status
 readStatus '.' = Right vals
@@ -48,7 +46,7 @@ readStatus c   = case index of
 
 readBoard :: String -> Either String Board
 readBoard cs = if length chars == length locs
-    then case sequence . map readStatus $ chars of
+    then case mapM readStatus chars of
       Left err -> Left err
       Right ss -> Right . Map.fromList . zip locs $ ss
     else Left "Input must have one character per cell"
@@ -65,7 +63,9 @@ sameCol :: Loc -> Loc -> Bool
 sameCol (_, c1) (_, c2) = c1 == c2
 
 related :: Loc -> Loc -> Bool
-related l1 l2 = l1 /= l2 && or ([sameRow, sameCol, sameBox] <*> [l1] <*> [l2])
+related l1 l2 = l1 /= l2 && any check conditions
+  where conditions = [sameRow, sameCol, sameBox]
+        check c = c l1 l2
 
 relatedLocs :: Loc -> [Loc]
 relatedLocs l = filter (related l) locs
@@ -90,8 +90,9 @@ certain :: Status -> Bool
 certain = (==1) . length
 
 setGivens :: Board -> Board
-setGivens board = foldr (\(l, s) b -> set b l $ head s) emptyBoard givens
-  where givens = filter (certain . snd) $ Map.assocs board
+setGivens = foldr setGiven emptyBoard . givens
+  where givens = filter (certain . snd) . Map.assocs
+        setGiven (l, s) b = set b l $ head s
 
 solved :: Board -> Bool
 solved = all certain . Map.elems
@@ -107,8 +108,8 @@ guesses b = case fu of
 
 solutions :: Board -> [Board]
 solutions b = if solved b
-                then [b]
-                else guesses b >>= solutions
+  then [b]
+  else guesses b >>= solutions
 
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
