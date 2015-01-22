@@ -2,11 +2,13 @@ import Data.List
 import Data.List.Split
 import Control.Applicative
 import Control.Monad
+import Control.Monad.State
 import System.Environment
 import Data.Char
 import Data.Maybe
 import Data.Ord
 import Data.Monoid
+import System.Random
 import qualified Data.Map as Map
 
 newtype Val = V Int deriving (Eq)
@@ -114,6 +116,38 @@ solutions b = if solved b
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
 
+ambiguous :: Board -> Bool
+ambiguous = (== 2) . length . take 2 . solutions
+
+randomInt :: RandomGen g => Int -> State g Int
+randomInt i = state $ randomR (0, i - 1)
+
+randomListItem :: RandomGen g => [a] -> State g (Maybe a)
+randomListItem [] = return Nothing
+randomListItem xs = do
+  index <- randomInt $ length xs
+  return . Just $ xs !! index
+
+setRandom :: RandomGen g => Board -> State g Board
+setRandom b = do
+  let us = filter (uncertain . snd) $ Map.assocs b
+  u <- randomListItem us
+  case u of
+    Nothing     -> return b
+    Just (l, s) -> do
+      v <- randomListItem s
+      return $ set b l $ fromJust v
+
+disambiguate :: RandomGen g => Board -> State g Board
+disambiguate b = if ambiguous b
+  then do
+    rb <- setRandom b
+    disambiguate rb
+  else return b
+
+createPuzzle :: RandomGen g => State g Board
+createPuzzle = disambiguate emptyBoard
+
 printUsage :: IO ()
 printUsage = do
   putStrLn "Usage:"
@@ -137,6 +171,10 @@ cli [f] = do
     Right b  -> do
       printBoard b
       printSolution b
+cli [] = do
+  gen <- getStdGen
+  let rb = evalState createPuzzle gen
+  printBoard rb
 cli _ = printUsage
 
 main = getArgs >>= cli
