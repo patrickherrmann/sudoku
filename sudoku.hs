@@ -92,7 +92,7 @@ certain = (==1) . length
 setGivens :: Board -> Board
 setGivens = foldr setGiven emptyBoard . givens
   where givens = filter (certain . snd) . Map.assocs
-        setGiven (l, s) b = set b l $ head s
+        setGiven (l, [v]) b = set b l v
 
 solved :: Board -> Bool
 solved = all certain . Map.elems
