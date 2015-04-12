@@ -2,6 +2,7 @@ module CLI
   ( Options(..)
   , Command(..)
   , SolveOptions(..)
+  , GenerateOptions(..)
   , optParser
   ) where
 
@@ -14,10 +15,15 @@ data Options = Options
 
 data Command
   = Solve SolveOptions
+  | Generate GenerateOptions
 
 data SolveOptions = SolveOptions
   { puzzleFile :: String
   , allSolutions :: Bool
+  }
+
+data GenerateOptions = GenerateOptions
+  { hideSolution :: Bool
   }
 
 parseUseAscii = flag False True
@@ -31,6 +37,10 @@ parseAllSolutions = flag False True
   <> short 'a'
   <> help "Find all solutions instead of stopping at one"
 
+parseHideSolution = flag False True
+  $  long "hideSolution"
+  <> help "Only show the puzzle, not its solution"
+
 parseSolveOptions = SolveOptions
   <$> parsePuzzleFile
   <*> parseAllSolutions
@@ -38,8 +48,15 @@ parseSolveOptions = SolveOptions
 parseSolveOptionInfo = info (helper <*> parseSolveOptions)
   $  progDesc "Solve a sudoku puzzle in PUZZLE_FILE"
 
+parseGenerateOptions = GenerateOptions
+  <$> parseHideSolution
+
+parseGenerateOptionInfo = info (helper <*> parseGenerateOptions)
+  $  progDesc "Generate a random sudoku puzzle"
+
 parseCommand = subparser
   $  command "solve" (Solve <$> parseSolveOptionInfo)
+  <> command "generate" (Generate <$> parseGenerateOptionInfo)
 
 parseOptions = Options
   <$> parseCommand

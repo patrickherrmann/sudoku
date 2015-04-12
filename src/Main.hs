@@ -1,5 +1,6 @@
 import CLI
 import Sudoku
+import Control.Monad
 import Options.Applicative
 
 showBoard :: Options -> Board -> String
@@ -28,8 +29,15 @@ solveCommand opts sOpts = do
         then printSolutions opts b
         else printSolution opts b
 
+generateCommand :: Options -> GenerateOptions -> IO ()
+generateCommand opts gOpts = do
+  (puzzle, solution) <- randomPuzzle
+  putStrLn $ showBoard opts puzzle
+  unless (hideSolution gOpts) (putStrLn $ showBoard opts solution)
+
 main :: IO ()
 main = do
   opts <- execParser optParser
   case cmd opts of
-    Solve solveOpts -> solveCommand opts solveOpts
+    Solve sOpts -> solveCommand opts sOpts
+    Generate gOpts -> generateCommand opts gOpts

@@ -10,6 +10,7 @@ module Sudoku
   , showBoardUnicode
   , solutions
   , solve
+  , randomPuzzle
   ) where
 
 import Data.List
@@ -17,6 +18,7 @@ import Data.List.Split
 import Control.Applicative
 import Data.Char
 import Data.Maybe
+import Data.Random
 import qualified Data.Map as M
 import qualified Data.Foldable as F
 
@@ -147,3 +149,23 @@ solutions = solutions' . setGivens
 
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
+
+mutate :: Board -> RVar Board
+mutate b = do
+  let free = M.assocs $ M.filter uncertain b
+  (loc, status) <- randomElement free
+  value <- randomElement status
+  return $ M.insert loc [value] b
+
+randomPuzzle' :: Board -> RVar (Board, Board)
+randomPuzzle' b = do
+  b' <- mutate b
+  if contradictory b'
+    then randomPuzzle' b
+    else case take 2 $ solutions b' of
+      [] -> randomPuzzle' b
+      [s] -> return (b', s)
+      _ -> randomPuzzle' b'
+
+randomPuzzle :: IO (Board, Board)
+randomPuzzle = sample $ randomPuzzle' emptyBoard
