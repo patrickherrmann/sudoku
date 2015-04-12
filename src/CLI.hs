@@ -22,7 +22,7 @@ data SolveOptions = SolveOptions
 
 parseUseAscii = flag False True
   $  long "ascii"
-  <> help "Render the board in ascii instead of unicode" 
+  <> help "Render the board in ascii instead of unicode"
 
 parsePuzzleFile = argument str $ metavar "PUZZLE_FILE"
 
