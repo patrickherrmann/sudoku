@@ -9,6 +9,7 @@ import Options.Applicative
 
 data Options = Options
   { cmd :: Command
+  , useAscii :: Bool
   }
 
 data Command
@@ -18,6 +19,10 @@ data SolveOptions = SolveOptions
   { puzzleFile :: String
   , allSolutions :: Bool
   }
+
+parseUseAscii = flag False True
+  $  long "ascii"
+  <> help "Render the board in ascii instead of unicode" 
 
 parsePuzzleFile = argument str $ metavar "PUZZLE_FILE"
 
@@ -38,6 +43,7 @@ parseCommand = subparser
 
 parseOptions = Options
   <$> parseCommand
+  <*> parseUseAscii
 
 optParser = info (helper <*> parseOptions)
            $  fullDesc

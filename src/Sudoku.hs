@@ -6,7 +6,7 @@ module Sudoku
   , Status
   , Board
   , readBoard
-  , showBoard
+  , showBoardAscii
   , showBoardUnicode
   , solutions
   , solve
@@ -34,21 +34,21 @@ locs = [(r, c) | r <- rows, c <- cols]
 emptyBoard :: Board
 emptyBoard = Map.fromList . zip locs $ repeat vals
 
-showStatus :: Status -> Char
-showStatus []         = 'X'
-showStatus [V v] = head $ show v
-showStatus _          = '.'
+showStatusAscii :: Status -> Char
+showStatusAscii []         = 'X'
+showStatusAscii [V v] = head $ show v
+showStatusAscii _          = '.'
 
 showStatusUnicode :: Status -> Char
 showStatusUnicode []         = 'X'
 showStatusUnicode [V v] = head $ show v
 showStatusUnicode _          = ' '
 
-showBoard :: Board -> String
-showBoard = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
+showBoardAscii :: Board -> String
+showBoardAscii = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
   where addBlankLines = intercalate [""] . chunksOf 3
         formatLine = intersperse ' ' . unwords . chunksOf 3
-        statuses = map showStatus . Map.elems
+        statuses = map showStatusAscii . Map.elems
 
 showBoardUnicode :: Board -> String
 showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
