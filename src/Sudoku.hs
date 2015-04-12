@@ -14,12 +14,8 @@ module Sudoku
 import Data.List
 import Data.List.Split
 import Control.Applicative
-import Control.Monad
-import System.Environment
 import Data.Char
 import Data.Maybe
-import Data.Ord
-import Data.Monoid
 import qualified Data.Map as Map
 
 newtype Val = V Int deriving (Eq)
@@ -114,21 +110,22 @@ contradictory :: Board -> Bool
 contradictory = any null . Map.elems
 
 bestGuess :: Board -> Maybe (Loc, Status)
-bestGuess b = best candidates
+bestGuess b = listToMaybe candidates
   where candidates = filter (uncertain . snd)
                    . Map.assocs $ b
-        best [] = Nothing
-        best cs = Just $ minimumBy (comparing (length . snd)) cs
 
 guesses :: Board -> [Board]
 guesses b = case bestGuess b of
     Nothing -> []
     Just (l, s) -> filter (not . contradictory) (set b l <$> s)
 
-solutions :: Board -> [Board]
-solutions b = if solved b
+solutions' :: Board -> [Board]
+solutions' b = if solved b
   then [b]
   else guesses b >>= solutions
+
+solutions :: Board -> [Board]
+solutions = solutions' . setGivens
 
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
