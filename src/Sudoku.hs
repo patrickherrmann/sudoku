@@ -7,6 +7,7 @@ module Sudoku
   , Board
   , readBoard
   , showBoard
+  , showBoardUnicode
   , solutions
   , solve
   ) where
@@ -38,12 +39,29 @@ showStatus []         = 'X'
 showStatus [V v] = head $ show v
 showStatus _          = '.'
 
+showStatusUnicode :: Status -> Char
+showStatusUnicode []         = 'X'
+showStatusUnicode [V v] = head $ show v
+showStatusUnicode _          = ' '
+
 showBoard :: Board -> String
-showBoard = unlines . addBlankLines . map formatLine . getLines . statuses
+showBoard = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
   where addBlankLines = intercalate [""] . chunksOf 3
         formatLine = intersperse ' ' . unwords . chunksOf 3
-        getLines = chunksOf 9
         statuses = map showStatus . Map.elems
+
+showBoardUnicode :: Board -> String
+showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
+  where addDividers = intercalate [bigDivider] . map (intersperse smallDivider) . chunksOf 3
+        bigDivider = "╠═══╪═══╪═══╬═══╪═══╪═══╬═══╪═══╪═══╣"
+        smallDivider = "╟───┼───┼───╫───┼───┼───╫───┼───┼───╢"
+        addCaps = (topRow ++) . (++ bottomRow)
+        topRow = "╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗\n"
+        bottomRow = "╚═══╧═══╧═══╩═══╧═══╧═══╩═══╧═══╧═══╝\n"
+        formatLine = ('║' :) . (++ "║") . intercalate "║" . map formatChunk . chunksOf 3
+        formatChunk = intercalate "│"
+        padCell s = [' ', s, ' ']
+        cells = map (padCell . showStatusUnicode) . Map.elems
 
 readStatus :: Char -> Either String Status
 readStatus '.' = Right vals
