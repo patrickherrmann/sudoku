@@ -17,14 +17,15 @@ import Data.List.Split
 import Control.Applicative
 import Data.Char
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.Map as M
+import qualified Data.Foldable as F
 
 newtype Val = V Int deriving (Eq)
 newtype Row = R Int deriving (Eq, Ord, Show)
 newtype Col = C Int deriving (Eq, Ord, Show)
 type Loc = (Row, Col)
 type Status = [Val]
-type Board = Map.Map Loc Status
+type Board = M.Map Loc Status
 
 vals = map V [1..9]
 rows = map R [0..8]
@@ -32,7 +33,7 @@ cols = map C [0..8]
 locs = [(r, c) | r <- rows, c <- cols]
 
 emptyBoard :: Board
-emptyBoard = Map.fromList . zip locs $ repeat vals
+emptyBoard = M.fromList . zip locs $ repeat vals
 
 showStatusAscii :: Status -> Char
 showStatusAscii []         = 'X'
@@ -48,7 +49,7 @@ showBoardAscii :: Board -> String
 showBoardAscii = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
   where addBlankLines = intercalate [""] . chunksOf 3
         formatLine = intersperse ' ' . unwords . chunksOf 3
-        statuses = map showStatusAscii . Map.elems
+        statuses = map showStatusAscii . M.elems
 
 showBoardUnicode :: Board -> String
 showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
@@ -61,7 +62,7 @@ showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9
         formatLine = ('┃' :) . (++ "┃") . intercalate "┃" . map formatChunk . chunksOf 3
         formatChunk = intercalate "│"
         padCell s = [' ', s, ' ']
-        cells = map (padCell . showStatusUnicode) . Map.elems
+        cells = map (padCell . showStatusUnicode) . M.elems
 
 readStatus :: Char -> Either String Status
 readStatus '.' = Right vals
@@ -75,7 +76,7 @@ readBoard :: String -> Either String Board
 readBoard cs = if length chars == length locs
     then case mapM readStatus chars of
       Left err -> Left err
-      Right ss -> Right . Map.fromList . zip locs $ ss
+      Right ss -> Right . M.fromList . zip locs $ ss
     else Left "Input must have one character per cell"
   where chars = filter (not . isSpace) cs
 
@@ -102,13 +103,13 @@ eliminate val loc b =
   if uncertain s && certain s'
     then set b' loc $ head s'
     else b'
-  where s = b Map.! loc
+  where s = b M.! loc
         s' = s \\ [val]
-        b'  = Map.insert loc s' b
+        b'  = M.insert loc s' b
 
 set :: Board -> Loc -> Val -> Board
 set b loc v =
-  foldr (eliminate v) (Map.insert loc [v] b) $ relatedLocs loc
+  foldr (eliminate v) (M.insert loc [v] b) $ relatedLocs loc
 
 uncertain :: Status -> Bool
 uncertain = (>1) . length
@@ -118,19 +119,18 @@ certain = (==1) . length
 
 setGivens :: Board -> Board
 setGivens = foldr setGiven emptyBoard . givens
-  where givens = filter (certain . snd) . Map.assocs
+  where givens = filter (certain . snd) . M.assocs
         setGiven (l, [v]) b = set b l v
 
 solved :: Board -> Bool
-solved = all certain . Map.elems
+solved = F.all certain
 
 contradictory :: Board -> Bool
-contradictory = any null . Map.elems
+contradictory = F.any null
 
 bestGuess :: Board -> Maybe (Loc, Status)
 bestGuess b = listToMaybe candidates
-  where candidates = filter (uncertain . snd)
-                   . Map.assocs $ b
+  where candidates = M.assocs $ M.filter uncertain b
 
 guesses :: Board -> [Board]
 guesses b = case bestGuess b of
