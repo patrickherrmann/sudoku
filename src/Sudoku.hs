@@ -1,3 +1,16 @@
+module Sudoku
+  ( Val(..)
+  , Row(..)
+  , Col(..)
+  , Loc
+  , Status
+  , Board
+  , readBoard
+  , showBoard
+  , solutions
+  , solve
+  ) where
+
 import Data.List
 import Data.List.Split
 import Control.Applicative
@@ -100,11 +113,17 @@ solved = all certain . Map.elems
 contradictory :: Board -> Bool
 contradictory = any null . Map.elems
 
+bestGuess :: Board -> Maybe (Loc, Status)
+bestGuess b = best candidates
+  where candidates = filter (uncertain . snd)
+                   . Map.assocs $ b
+        best [] = Nothing
+        best cs = Just $ minimumBy (comparing (length . snd)) cs
+
 guesses :: Board -> [Board]
-guesses b = case fu of
+guesses b = case bestGuess b of
     Nothing -> []
     Just (l, s) -> filter (not . contradictory) (set b l <$> s)
-  where fu = find (uncertain . snd) $ Map.assocs b
 
 solutions :: Board -> [Board]
 solutions b = if solved b
@@ -113,30 +132,3 @@ solutions b = if solved b
 
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
-
-printUsage :: IO ()
-printUsage = do
-  putStrLn "Usage:"
-  putStrLn "   sudoku <puzzle file>"
-
-printBoard :: Board -> IO ()
-printBoard = putStrLn . showBoard
-
-printSolution :: Board -> IO ()
-printSolution b = case solution of
-    Nothing -> putStrLn "No Solutions"
-    Just s  -> printBoard s
-  where solution = solve . setGivens $ b
-
-cli :: [String] -> IO ()
-cli [f] = do
-  input <- readFile f
-  let board = readBoard input
-  case board of
-    Left err -> putStrLn err
-    Right b  -> do
-      printBoard b
-      printSolution b
-cli _ = printUsage
-
-main = getArgs >>= cli
