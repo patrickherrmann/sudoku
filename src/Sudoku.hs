@@ -121,8 +121,8 @@ certain = (==1) . length
 
 setGivens :: Board -> Board
 setGivens = foldr setGiven emptyBoard . givens
-  where givens = filter (certain . snd) . M.assocs
-        setGiven (l, [v]) b = set b l v
+  where givens = map (head <$>) . M.assocs . M.filter certain
+        setGiven (l, v) b = set b l v
 
 solved :: Board -> Bool
 solved = F.all certain
@@ -173,15 +173,15 @@ removeGivens b = do
 ambiguous :: Board -> Bool
 ambiguous = (>1) . length . take 2 . solutions
 
-randomPuzzle' :: Board -> RVar Board
-randomPuzzle' b = do
+ambiguate :: Board -> RVar Board
+ambiguate b = do
   let b's = filter (not . ambiguous) $ removeGivens b
   if null b's
     then return b
-    else randomElement b's >>= randomPuzzle'
+    else randomElement b's >>= ambiguate
 
 randomPuzzle :: RVar (Board, Board)
 randomPuzzle = do
   rb <- randomBoard
-  rp <- randomPuzzle' rb
+  rp <- ambiguate rb
   return (rp, rb)
