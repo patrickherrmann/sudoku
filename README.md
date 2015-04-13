@@ -15,7 +15,7 @@ To render as ascii instead of unicode, use `sudoku --ascii`.
 ### Solve
 
 ```
-$ ./dist/build/sudoku/sudoku solve puzzles/hardest.sudoku
+$ ./dist/build/sudoku/sudoku solve puzzles/extreme.sudoku
 ┏━━━┯━━━┯━━━┳━━━┯━━━┯━━━┳━━━┯━━━┯━━━┓
 ┃ 8 │   │   ┃   │   │   ┃   │   │   ┃
 ┠───┼───┼───╂───┼───┼───╂───┼───┼───┨
