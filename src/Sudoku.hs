@@ -130,14 +130,13 @@ solved = F.all certain
 contradictory :: Board -> Bool
 contradictory = F.any null
 
-bestGuess :: Board -> Maybe (Loc, Status)
-bestGuess b = listToMaybe candidates
-  where candidates = M.assocs $ M.filter uncertain b
+bestGuesses :: Board -> [(Loc, Status)]
+bestGuesses b = M.assocs $ M.filter uncertain b
 
 guesses :: Board -> [Board]
-guesses b = case bestGuess b of
-    Nothing -> []
-    Just (l, s) -> filter (not . contradictory) (set b l <$> s)
+guesses b = case bestGuesses b of
+  [] -> []
+  ((l, s):_) -> filter (not . contradictory) (set b l <$> s)
 
 randomGuesses :: Board -> RVar [Board]
 randomGuesses = shuffle . guesses

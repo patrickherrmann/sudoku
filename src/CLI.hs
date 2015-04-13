@@ -64,5 +64,4 @@ parseOptions = Options
 
 optParser = info (helper <*> parseOptions)
            $  fullDesc
-           <> header "Solve sudoku puzzles"
-           <> progDesc "Solve sudoku puzzles"
+           <> progDesc "Solve and generate sudoku puzzles"

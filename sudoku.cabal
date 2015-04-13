@@ -1,6 +1,6 @@
 name:                sudoku
 version:             0.1.0.0
-synopsis:            Solve sudoku puzzles
+synopsis:            Solve and generate sudoku puzzles
 license:             MIT
 license-file:        LICENSE
 author:              Patrick Herrmann
