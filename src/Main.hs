@@ -1,6 +1,7 @@
 import CLI
 import Sudoku
 import Control.Monad
+import Data.Random
 import Options.Applicative
 
 showBoard :: Options -> Board -> String
@@ -31,7 +32,7 @@ solveCommand opts sOpts = do
 
 generateCommand :: Options -> GenerateOptions -> IO ()
 generateCommand opts gOpts = do
-  (puzzle, solution) <- randomPuzzle
+  (puzzle, solution) <- sample randomPuzzle
   putStrLn $ showBoard opts puzzle
   unless (hideSolution gOpts) (putStrLn $ showBoard opts solution)
 

@@ -139,10 +139,14 @@ guesses b = case bestGuess b of
     Nothing -> []
     Just (l, s) -> filter (not . contradictory) (set b l <$> s)
 
+randomGuesses :: Board -> RVar [Board]
+randomGuesses = shuffle . guesses
+
 solutions' :: Board -> [Board]
-solutions' b = if solved b
-  then [b]
-  else guesses b >>= solutions
+solutions' b
+  | contradictory b = []
+  | solved b = [b]
+  | otherwise = guesses b >>= solutions
 
 solutions :: Board -> [Board]
 solutions = solutions' . setGivens
@@ -150,22 +154,34 @@ solutions = solutions' . setGivens
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
 
-mutate :: Board -> RVar Board
-mutate b = do
-  let free = M.assocs $ M.filter uncertain b
-  (loc, status) <- randomElement free
-  value <- randomElement status
-  return $ M.insert loc [value] b
+randomSolutions :: Board -> RVar [Board]
+randomSolutions b
+  | contradictory b = return []
+  | solved b = return [b]
+  | otherwise = do
+    gs <- randomGuesses b
+    return $ gs >>= solutions
 
-randomPuzzle' :: Board -> RVar (Board, Board)
+randomBoard :: RVar Board
+randomBoard = head <$> randomSolutions emptyBoard
+
+removeGivens :: Board -> [Board]
+removeGivens b = do
+  loc <- M.keys $ M.filter certain b
+  return $ M.insert loc vals b
+
+ambiguous :: Board -> Bool
+ambiguous = (>1) . length . take 2 . solutions
+
+randomPuzzle' :: Board -> RVar Board
 randomPuzzle' b = do
-  b' <- mutate b
-  if contradictory b'
-    then randomPuzzle' b
-    else case take 2 $ solutions b' of
-      [] -> randomPuzzle' b
-      [s] -> return (b', s)
-      _ -> randomPuzzle' b'
+  let b's = filter (not . ambiguous) $ removeGivens b
+  if null b's
+    then return b
+    else randomElement b's >>= randomPuzzle'
 
-randomPuzzle :: IO (Board, Board)
-randomPuzzle = sample $ randomPuzzle' emptyBoard
+randomPuzzle :: RVar (Board, Board)
+randomPuzzle = do
+  rb <- randomBoard
+  rp <- randomPuzzle' rb
+  return (rp, rb)
