@@ -15,7 +15,7 @@ To render as ascii instead of unicode, use `sudoku --ascii`.
 ### Solve
 
 ```
-$ time ./dist/build/sudoku/sudoku solve puzzles/extreme.sudoku
+$ ./dist/build/sudoku/sudoku solve puzzles/extreme.sudoku
 ╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗
 ║ 8 │   │   ║   │   │   ║   │   │   ║
 ╟───┼───┼───╫───┼───┼───╫───┼───┼───╢
@@ -63,7 +63,7 @@ To find all possible solutions instead of stopping after one is found, use `solv
 ### Generate
 
 ```
-$ time ./dist/build/sudoku/sudoku generate
+$ ./dist/build/sudoku/sudoku generate
 ╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗
 ║ 4 │   │   ║   │ 8 │ 6 ║   │   │ 9 ║
 ╟───┼───┼───╫───┼───┼───╫───┼───┼───╢
