@@ -114,10 +114,12 @@ set b loc v =
   foldr (eliminate v) (M.insert loc [v] b) $ relatedLocs loc
 
 uncertain :: Status -> Bool
-uncertain = (>1) . length
+uncertain (_:_:_) = True
+uncertain _ = False
 
 certain :: Status -> Bool
-certain = (==1) . length
+certain [_] = True
+certain _ = False
 
 setGivens :: Board -> Board
 setGivens = foldr setGiven emptyBoard . givens
@@ -135,16 +137,16 @@ bestGuesses b = M.assocs $ M.filter uncertain b
 
 guesses :: Board -> [Board]
 guesses b = filter (not . contradictory) (set b l <$> s)
-  where (l, s) = head $ bestGuesses b
+  where ((l, s):_) = bestGuesses b
 
-solutions' :: Board -> [Board]
-solutions' b
+findSolutions :: Board -> [Board]
+findSolutions b
   | contradictory b = []
   | solved b = [b]
-  | otherwise = guesses b >>= solutions
+  | otherwise = guesses b >>= findSolutions
 
 solutions :: Board -> [Board]
-solutions = solutions' . setGivens
+solutions = findSolutions . setGivens
 
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
@@ -168,7 +170,7 @@ shuffleSymbols b = do
 
 randomBoard :: RVar Board
 randomBoard = do
-  let seeds = take 100 $ solutions emptyBoard
+  let seeds = take 100 $ findSolutions emptyBoard
   randomElement seeds
     >>= shuffleColumns
     >>= return . rotateBoard
