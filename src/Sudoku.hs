@@ -134,12 +134,8 @@ bestGuesses :: Board -> [(Loc, Status)]
 bestGuesses b = M.assocs $ M.filter uncertain b
 
 guesses :: Board -> [Board]
-guesses b = case bestGuesses b of
-  [] -> []
-  ((l, s):_) -> filter (not . contradictory) (set b l <$> s)
-
-randomGuesses :: Board -> RVar [Board]
-randomGuesses = shuffle . guesses
+guesses b = filter (not . contradictory) (set b l <$> s)
+  where (l, s) = head $ bestGuesses b
 
 solutions' :: Board -> [Board]
 solutions' b
@@ -153,16 +149,31 @@ solutions = solutions' . setGivens
 solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
 
-randomSolutions :: Board -> RVar [Board]
-randomSolutions b
-  | contradictory b = return []
-  | solved b = return [b]
-  | otherwise = do
-    gs <- randomGuesses b
-    return $ gs >>= solutions
+rotateBoard :: Board -> Board
+rotateBoard = M.mapKeys rotateLoc
+  where rotateLoc (R r, C c) = (R c, C (8 - r))
+
+shuffleColumns :: Board -> RVar Board
+shuffleColumns b = do
+  let ts = chunksOf 3 cols
+  ts' <- concat <$> (mapM shuffle ts >>= shuffle)
+  let transform (C c) = ts' !! c
+  return $ M.mapKeys (transform <$>) b
+
+shuffleSymbols :: Board -> RVar Board
+shuffleSymbols b = do
+  vs <- shuffle vals
+  let transform (V v) = vs !! (v - 1)
+  return $ M.map (transform <$>) b
 
 randomBoard :: RVar Board
-randomBoard = head <$> randomSolutions emptyBoard
+randomBoard = do
+  let seeds = take 100 $ solutions emptyBoard
+  randomElement seeds
+    >>= shuffleColumns
+    >>= return . rotateBoard
+    >>= shuffleColumns
+    >>= shuffleSymbols
 
 removeGivens :: Board -> [Board]
 removeGivens b = do
