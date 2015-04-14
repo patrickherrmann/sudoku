@@ -63,8 +63,8 @@ To find all possible solutions instead of stopping after one is found, use `solv
 ### Generate
 
 Generated puzzles have the following guarantees:
-    -    There is exactly one solution
-    -    Removing any clue adds additional possible solutions
+  *  There is exactly one solution
+  *  Removing any clue adds additional possible solutions
 
 ```
 $ ./dist/build/sudoku/sudoku generate
