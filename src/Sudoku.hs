@@ -19,6 +19,7 @@ import Control.Applicative
 import Data.Char
 import Data.Maybe
 import Data.Random
+import Data.Ord
 import qualified Data.Map as M
 import qualified Data.Foldable as F
 
@@ -133,10 +134,11 @@ contradictory :: Board -> Bool
 contradictory = F.any null
 
 bestGuesses :: Board -> [(Loc, Status)]
-bestGuesses b = M.assocs $ M.filter uncertain b
+bestGuesses b = sortBy (comparing (length <$>))
+              . M.assocs $ M.filter uncertain b
 
 guesses :: Board -> [Board]
-guesses b = filter (not . contradictory) (set b l <$> s)
+guesses b = set b l <$> s
   where ((l, s):_) = bestGuesses b
 
 findSolutions :: Board -> [Board]
