@@ -56,12 +56,12 @@ showBoardAscii = unlines . addBlankLines . map formatLine . chunksOf 9 . statuse
 showBoardUnicode :: Board -> String
 showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
   where addDividers = intercalate [bigDivider] . map (intersperse smallDivider) . chunksOf 3
-        bigDivider = "┣━━━┿━━━┿━━━╋━━━┿━━━┿━━━╋━━━┿━━━┿━━━┫"
-        smallDivider = "┠───┼───┼───╂───┼───┼───╂───┼───┼───┨"
+        bigDivider = "╠═══╪═══╪═══╬═══╪═══╪═══╬═══╪═══╪═══╣"
+        smallDivider = "╟───┼───┼───╫───┼───┼───╫───┼───┼───╢"
         addCaps = (topRow ++) . (++ bottomRow)
-        topRow = "┏━━━┯━━━┯━━━┳━━━┯━━━┯━━━┳━━━┯━━━┯━━━┓\n"
-        bottomRow = "┗━━━┷━━━┷━━━┻━━━┷━━━┷━━━┻━━━┷━━━┷━━━┛\n"
-        formatLine = ('┃' :) . (++ "┃") . intercalate "┃" . map formatChunk . chunksOf 3
+        topRow = "╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗\n"
+        bottomRow = "╚═══╧═══╧═══╩═══╧═══╧═══╩═══╧═══╧═══╝\n"
+        formatLine = ('║' :) . (++ "║") . intercalate "║" . map formatChunk . chunksOf 3
         formatChunk = intercalate "│"
         padCell s = [' ', s, ' ']
         cells = map (padCell . showStatusUnicode) . M.elems
