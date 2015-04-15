@@ -22,6 +22,7 @@ import Data.Random
 import Data.Ord
 import qualified Data.Map as M
 import qualified Data.Foldable as F
+import qualified Data.Traversable as T
 
 newtype Val = V Int deriving (Eq)
 newtype Row = R Int deriving (Eq, Ord, Show)
@@ -168,10 +169,13 @@ shuffleSymbols b = do
   let transform (V v) = vs !! (v - 1)
   return $ M.map (transform <$>) b
 
+shuffleStatuses :: Board -> RVar Board
+shuffleStatuses = T.mapM shuffle
+
 randomBoard :: RVar Board
 randomBoard = do
-  let seeds = take 100 $ findSolutions emptyBoard
-  randomElement seeds
+  shuffleStatuses emptyBoard
+    >>= return . head . findSolutions
     >>= shuffleColumns
     >>= return . rotateBoard
     >>= shuffleColumns
