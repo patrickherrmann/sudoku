@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Sudoku
   ( Val(..)
   , Row(..)
@@ -20,24 +22,27 @@ import Data.Char
 import Data.Maybe
 import Data.Random
 import Data.Ord
-import qualified Data.Map as M
+import Data.Array.IArray
 import qualified Data.Foldable as F
 import qualified Data.Traversable as T
 
 newtype Val = V Int deriving (Eq)
-newtype Row = R Int deriving (Eq, Ord, Show)
-newtype Col = C Int deriving (Eq, Ord, Show)
+newtype Row = R Int deriving (Eq, Ord, Show, Ix)
+newtype Col = C Int deriving (Eq, Ord, Show, Ix)
 type Loc = (Row, Col)
 type Status = [Val]
-type Board = M.Map Loc Status
+type Board = Array Loc Status
 
 vals = map V [1..9]
 rows = map R [0..8]
 cols = map C [0..8]
 locs = [(r, c) | r <- rows, c <- cols]
 
+boardBounds :: (Loc, Loc)
+boardBounds = ((R 0, C 0), (R 8, C 8))
+
 emptyBoard :: Board
-emptyBoard = M.fromList . zip locs $ repeat vals
+emptyBoard = listArray boardBounds $ repeat vals
 
 showStatusAscii :: Status -> Char
 showStatusAscii []         = 'X'
@@ -53,7 +58,7 @@ showBoardAscii :: Board -> String
 showBoardAscii = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
   where addBlankLines = intercalate [""] . chunksOf 3
         formatLine = intersperse ' ' . unwords . chunksOf 3
-        statuses = map showStatusAscii . M.elems
+        statuses = map showStatusAscii . elems
 
 showBoardUnicode :: Board -> String
 showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
@@ -66,21 +71,21 @@ showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9
         formatLine = ('║' :) . (++ "║") . intercalate "║" . map formatChunk . chunksOf 3
         formatChunk = intercalate "│"
         padCell s = [' ', s, ' ']
-        cells = map (padCell . showStatusUnicode) . M.elems
+        cells = map (padCell . showStatusUnicode) . elems
 
 readStatus :: Char -> Either String Status
 readStatus '.' = Right vals
-readStatus c   = case index of
+readStatus c   = case mi of
     Nothing -> Left $ "Invalid input " ++ [c]
     Just i  -> Right [V $ i + 1]
   where statusChars = ['1'..'9']
-        index = elemIndex c statusChars
+        mi = elemIndex c statusChars
 
 readBoard :: String -> Either String Board
 readBoard cs = if length chars == length locs
     then case mapM readStatus chars of
       Left err -> Left err
-      Right ss -> Right . M.fromList . zip locs $ ss
+      Right ss -> Right . listArray boardBounds $ ss
     else Left "Input must have one character per cell"
   where chars = filter (not . isSpace) cs
 
@@ -106,12 +111,12 @@ eliminate :: Val -> Loc -> Board -> Board
 eliminate v loc b
     | null isV = b
     | otherwise = reduce notV
-  where (isV, notV) = partition (== v) $ b M.! loc
+  where (isV, notV) = partition (== v) $ b ! loc
         reduce [v'] = set b loc v'
-        reduce _    = M.insert loc notV b
+        reduce _    = b // [(loc, notV)]
 
 set :: Board -> Loc -> Val -> Board
-set b loc v = foldr (eliminate v) (M.insert loc [v] b) $ relatedLocs loc
+set b loc v = foldr (eliminate v) (b // [(loc, [v])]) $ relatedLocs loc
 
 uncertain :: Status -> Bool
 uncertain (_:_:_) = True
@@ -123,18 +128,21 @@ certain _ = False
 
 setGivens :: Board -> Board
 setGivens = foldr setGiven emptyBoard . givens
-  where givens = map (head <$>) . M.assocs . M.filter certain
+  where givens = mapMaybe given . assocs
+        given (l, [v]) = Just (l, v)
+        given _ = Nothing
         setGiven (l, v) b = set b l v
 
 solved :: Board -> Bool
 solved = F.all certain
 
 contradictory :: Board -> Bool
-contradictory = F.any null
+contradictory = any null . elems
 
 bestGuesses :: Board -> [(Loc, Status)]
-bestGuesses b = sortBy (comparing (length <$>))
-              . M.assocs $ M.filter uncertain b
+bestGuesses = sortBy (comparing (length <$>))
+            . filter (uncertain . snd)
+            . assocs
 
 guesses :: Board -> [Board]
 guesses b = set b l <$> s
@@ -153,7 +161,7 @@ solve :: Board -> Maybe Board
 solve = listToMaybe . solutions
 
 rotateBoard :: Board -> Board
-rotateBoard = M.mapKeys rotateLoc
+rotateBoard = ixmap boardBounds rotateLoc
   where rotateLoc (R r, C c) = (R c, C (8 - r))
 
 shuffleColumns :: Board -> RVar Board
@@ -161,16 +169,18 @@ shuffleColumns b = do
   let ts = chunksOf 3 cols
   ts' <- concat <$> (mapM shuffle ts >>= shuffle)
   let transform (C c) = ts' !! c
-  return $ M.mapKeys (transform <$>) b
+  return $ ixmap boardBounds (transform <$>) b
 
 shuffleSymbols :: Board -> RVar Board
 shuffleSymbols b = do
   vs <- shuffle vals
   let transform (V v) = vs !! (v - 1)
-  return $ M.map (transform <$>) b
+  return $ amap (transform <$>) b
 
 shuffleStatuses :: Board -> RVar Board
-shuffleStatuses = T.mapM shuffle
+shuffleStatuses b = do
+  ss <- mapM shuffle $ elems b
+  return $ listArray boardBounds ss
 
 randomBoard :: RVar Board
 randomBoard = do
@@ -183,8 +193,8 @@ randomBoard = do
 
 removeGivens :: Board -> [Board]
 removeGivens b = do
-  loc <- M.keys $ M.filter certain b
-  return $ M.insert loc vals b
+  loc <- map fst . filter (certain . snd) $ assocs b
+  return $ b // [(loc, vals)]
 
 ambiguous :: Board -> Bool
 ambiguous = (>1) . length . take 2 . solutions
