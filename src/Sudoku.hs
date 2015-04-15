@@ -102,32 +102,15 @@ relatedLocs :: Loc -> [Loc]
 relatedLocs l = filter (related l) locs
 
 eliminate :: Val -> Loc -> Board -> Board
-eliminate val loc b
-    | uncertain s && certain s' = set b' loc $ head s'
-    | otherwise = b'
-  where s = b M.! loc
-        s' = s \\ [val]
-        b'  = flip checkUnits loc $ M.insert loc s' b
-
-units :: Loc -> [[Loc]]
-units l = [filter sameUnit locs | sameUnit <- [sameRow l, sameCol l, sameBox l]]
-
-checkUnits :: Board -> Loc -> Board
-checkUnits b l = foldr (flip checkVals) b $ units l
-
-checkVals :: Board -> [Loc] -> Board
-checkVals b ls = foldr (\v b' -> checkUnit b' ls v) b vals
-
-checkUnit :: Board -> [Loc] -> Val -> Board
-checkUnit b ls v = case occs of
-    [(l, (_:_:_))] -> set b l v
-    _ -> b
-  where occs = M.assocs $ M.filterWithKey ok b
-        ok l s = l `elem` ls && v `elem` s
+eliminate v loc b
+    | null isV = b
+    | otherwise = reduce notV
+  where (isV, notV) = partition (== v) $ b M.! loc
+        reduce [v'] = set b loc v'
+        reduce _    = M.insert loc notV b
 
 set :: Board -> Loc -> Val -> Board
-set b loc v =
-  foldr (eliminate v) (M.insert loc [v] b) $ relatedLocs loc
+set b loc v = foldr (eliminate v) (M.insert loc [v] b) $ relatedLocs loc
 
 uncertain :: Status -> Bool
 uncertain (_:_:_) = True
