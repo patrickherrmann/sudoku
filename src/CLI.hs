@@ -3,7 +3,7 @@ module CLI
   , Command(..)
   , SolveOptions(..)
   , GenerateOptions(..)
-  , optParser
+  , parseOpts
   ) where
 
 import Options.Applicative
@@ -65,3 +65,5 @@ parseOptions = Options
 optParser = info (helper <*> parseOptions)
            $  fullDesc
            <> progDesc "Solve and generate sudoku puzzles"
+
+parseOpts = execParser optParser

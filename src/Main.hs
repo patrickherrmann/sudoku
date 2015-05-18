@@ -2,7 +2,6 @@ import CLI
 import Sudoku
 import Control.Monad
 import Data.Random
-import Options.Applicative
 
 showBoard :: Options -> Board -> String
 showBoard opts
@@ -38,7 +37,7 @@ generateCommand opts gOpts = do
 
 main :: IO ()
 main = do
-  opts <- execParser optParser
+  opts <- parseOpts
   case cmd opts of
     Solve sOpts -> solveCommand opts sOpts
     Generate gOpts -> generateCommand opts gOpts

@@ -7,24 +7,21 @@ module Sudoku
   , Loc
   , Status
   , Board
-  , readBoard
-  , showBoardAscii
-  , showBoardUnicode
   , solutions
   , solve
   , randomPuzzle
+  , readBoard
+  , showBoardAscii
+  , showBoardUnicode
   ) where
 
 import Data.List
 import Data.List.Split
-import Control.Applicative
 import Data.Char
 import Data.Maybe
 import Data.Random
 import Data.Ord
 import Data.Array.IArray
-import qualified Data.Foldable as F
-import qualified Data.Traversable as T
 
 newtype Val = V Int deriving (Eq)
 newtype Row = R Int deriving (Eq, Ord, Show, Ix)
@@ -33,9 +30,16 @@ type Loc = (Row, Col)
 type Status = [Val]
 type Board = Array Loc Status
 
+vals :: [Val]
 vals = map V [1..9]
+
+rows :: [Row]
 rows = map R [0..8]
+
+cols :: [Col]
 cols = map C [0..8]
+
+locs :: [Loc]
 locs = [(r, c) | r <- rows, c <- cols]
 
 boardBounds :: (Loc, Loc)
@@ -43,51 +47,6 @@ boardBounds = ((R 0, C 0), (R 8, C 8))
 
 emptyBoard :: Board
 emptyBoard = listArray boardBounds $ repeat vals
-
-showStatusAscii :: Status -> Char
-showStatusAscii []         = 'X'
-showStatusAscii [V v] = head $ show v
-showStatusAscii _          = '.'
-
-showStatusUnicode :: Status -> Char
-showStatusUnicode []         = 'X'
-showStatusUnicode [V v] = head $ show v
-showStatusUnicode _          = ' '
-
-showBoardAscii :: Board -> String
-showBoardAscii = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
-  where addBlankLines = intercalate [""] . chunksOf 3
-        formatLine = intersperse ' ' . unwords . chunksOf 3
-        statuses = map showStatusAscii . elems
-
-showBoardUnicode :: Board -> String
-showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
-  where addDividers = intercalate [bigDivider] . map (intersperse smallDivider) . chunksOf 3
-        bigDivider = "╠═══╪═══╪═══╬═══╪═══╪═══╬═══╪═══╪═══╣"
-        smallDivider = "╟───┼───┼───╫───┼───┼───╫───┼───┼───╢"
-        addCaps = (topRow ++) . (++ bottomRow)
-        topRow = "╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗\n"
-        bottomRow = "╚═══╧═══╧═══╩═══╧═══╧═══╩═══╧═══╧═══╝\n"
-        formatLine = ('║' :) . (++ "║") . intercalate "║" . map formatChunk . chunksOf 3
-        formatChunk = intercalate "│"
-        padCell s = [' ', s, ' ']
-        cells = map (padCell . showStatusUnicode) . elems
-
-readStatus :: Char -> Either String Status
-readStatus '.' = Right vals
-readStatus c   = case mi of
-    Nothing -> Left $ "Invalid input " ++ [c]
-    Just i  -> Right [V $ i + 1]
-  where statusChars = ['1'..'9']
-        mi = elemIndex c statusChars
-
-readBoard :: String -> Either String Board
-readBoard cs = if length chars == length locs
-    then case mapM readStatus chars of
-      Left err -> Left err
-      Right ss -> Right . listArray boardBounds $ ss
-    else Left "Input must have one character per cell"
-  where chars = filter (not . isSpace) cs
 
 sameBox :: Loc -> Loc -> Bool
 sameBox (R r1, C c1) (R r2, C c2) =
@@ -134,7 +93,7 @@ setGivens = foldr setGiven emptyBoard . givens
         setGiven (l, v) b = set b l v
 
 solved :: Board -> Bool
-solved = F.all certain
+solved = all certain
 
 contradictory :: Board -> Bool
 contradictory = any null . elems
@@ -211,3 +170,48 @@ randomPuzzle = do
   rb <- randomBoard
   rp <- ambiguate rb
   return (rp, rb)
+
+showStatusAscii :: Status -> Char
+showStatusAscii []         = 'X'
+showStatusAscii [V v] = head $ show v
+showStatusAscii _          = '.'
+
+showStatusUnicode :: Status -> Char
+showStatusUnicode []         = 'X'
+showStatusUnicode [V v] = head $ show v
+showStatusUnicode _          = ' '
+
+showBoardAscii :: Board -> String
+showBoardAscii = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
+  where addBlankLines = intercalate [""] . chunksOf 3
+        formatLine = intersperse ' ' . unwords . chunksOf 3
+        statuses = map showStatusAscii . elems
+
+showBoardUnicode :: Board -> String
+showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
+  where addDividers = intercalate [bigDivider] . map (intersperse smallDivider) . chunksOf 3
+        bigDivider = "╠═══╪═══╪═══╬═══╪═══╪═══╬═══╪═══╪═══╣"
+        smallDivider = "╟───┼───┼───╫───┼───┼───╫───┼───┼───╢"
+        addCaps = (topRow ++) . (++ bottomRow)
+        topRow = "╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗\n"
+        bottomRow = "╚═══╧═══╧═══╩═══╧═══╧═══╩═══╧═══╧═══╝\n"
+        formatLine = ('║' :) . (++ "║") . intercalate "║" . map formatChunk . chunksOf 3
+        formatChunk = intercalate "│"
+        padCell s = [' ', s, ' ']
+        cells = map (padCell . showStatusUnicode) . elems
+
+readStatus :: Char -> Either String Status
+readStatus '.' = Right vals
+readStatus c   = case mi of
+    Nothing -> Left $ "Invalid input " ++ [c]
+    Just i  -> Right [V $ i + 1]
+  where statusChars = ['1'..'9']
+        mi = elemIndex c statusChars
+
+readBoard :: String -> Either String Board
+readBoard cs = if length chars == length locs
+    then case mapM readStatus chars of
+      Left err -> Left err
+      Right ss -> Right . listArray boardBounds $ ss
+    else Left "Input must have one character per cell"
+  where chars = filter (not . isSpace) cs
