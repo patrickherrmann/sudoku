@@ -26,44 +26,45 @@ data GenerateOptions = GenerateOptions
   { hideSolution :: Bool
   }
 
-parseUseAscii = flag False True
-  $  long "ascii"
-  <> help "Render the board in ascii instead of unicode"
+parseOpts :: IO Options
+parseOpts = customExecParser (prefs showHelpOnError) optParser
+  where
+    optParser = info (helper <*> parseOptions)
+               $  fullDesc
+               <> progDesc "Solve and generate sudoku puzzles"
 
-parsePuzzleFile = argument str $ metavar "PUZZLE_FILE"
+    parseOptions = Options
+      <$> parseCommand
+      <*> parseUseAscii
 
-parseAllSolutions = flag False True
-  $  long "all"
-  <> short 'a'
-  <> help "Find all solutions instead of stopping at one"
+    parseCommand = subparser
+      $  command "solve" (Solve <$> parseSolveOptionInfo)
+      <> command "generate" (Generate <$> parseGenerateOptionInfo)
+    
+    parseUseAscii = flag False True
+      $  long "ascii"
+      <> help "Render the board in ascii instead of unicode"
 
-parseHideSolution = flag False True
-  $  long "hideSolution"
-  <> help "Only show the puzzle, not its solution"
+    parseSolveOptionInfo = info (helper <*> parseSolveOptions)
+      $  progDesc "Solve a sudoku puzzle in PUZZLE_FILE"
 
-parseSolveOptions = SolveOptions
-  <$> parsePuzzleFile
-  <*> parseAllSolutions
+    parseSolveOptions = SolveOptions
+      <$> parsePuzzleFile
+      <*> parseAllSolutions
 
-parseSolveOptionInfo = info (helper <*> parseSolveOptions)
-  $  progDesc "Solve a sudoku puzzle in PUZZLE_FILE"
+    parseGenerateOptionInfo = info (helper <*> parseGenerateOptions)
+      $  progDesc "Generate a random sudoku puzzle"
+      
+    parseGenerateOptions = GenerateOptions
+      <$> parseHideSolution
+      
+    parsePuzzleFile = argument str $ metavar "PUZZLE_FILE"
 
-parseGenerateOptions = GenerateOptions
-  <$> parseHideSolution
+    parseAllSolutions = flag False True
+      $  long "all"
+      <> short 'a'
+      <> help "Find all solutions instead of stopping at one"
 
-parseGenerateOptionInfo = info (helper <*> parseGenerateOptions)
-  $  progDesc "Generate a random sudoku puzzle"
-
-parseCommand = subparser
-  $  command "solve" (Solve <$> parseSolveOptionInfo)
-  <> command "generate" (Generate <$> parseGenerateOptionInfo)
-
-parseOptions = Options
-  <$> parseCommand
-  <*> parseUseAscii
-
-optParser = info (helper <*> parseOptions)
-           $  fullDesc
-           <> progDesc "Solve and generate sudoku puzzles"
-
-parseOpts = execParser optParser
+    parseHideSolution = flag False True
+      $  long "hideSolution"
+      <> help "Only show the puzzle, not its solution"

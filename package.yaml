@@ -1,0 +1,25 @@
+name: sudoku
+version: 1.0.0
+author: Patrick Herrmann
+maintainer: patrickwherrmann@gmail.com
+copyright: 2016 Patrick Herrmann
+license: MIT
+
+github: patrickherrmann/sudoku
+
+ghc-options: -Wall -O2
+default-extensions:
+  - LambdaCase
+  - GeneralizedNewtypeDeriving
+
+executables:
+  sudoku:
+    source-dirs: src
+    main: Main.hs
+    dependencies:
+      - base == 4.*
+      - containers
+      - split
+      - optparse-applicative
+      - random-fu
+      - array

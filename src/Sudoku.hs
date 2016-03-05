@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Sudoku
   ( Val(..)
   , Row(..)
@@ -60,8 +58,9 @@ sameCol (_, c1) (_, c2) = c1 == c2
 
 related :: Loc -> Loc -> Bool
 related l1 l2 = l1 /= l2 && any check conditions
-  where conditions = [sameRow, sameCol, sameBox]
-        check c = c l1 l2
+  where
+    conditions = [sameRow, sameCol, sameBox]
+    check c = c l1 l2
 
 relatedLocs :: Loc -> [Loc]
 relatedLocs l = filter (related l) locs
@@ -70,27 +69,31 @@ eliminate :: Val -> Loc -> Board -> Board
 eliminate v loc b
     | null isV = b
     | otherwise = reduce notV
-  where (isV, notV) = partition (== v) $ b ! loc
-        reduce [v'] = set b loc v'
-        reduce _    = b // [(loc, notV)]
+  where
+    (isV, notV) = partition (== v) $ b ! loc
+    reduce [v'] = set b loc v'
+    reduce _    = b // [(loc, notV)]
 
 set :: Board -> Loc -> Val -> Board
 set b loc v = foldr (eliminate v) (b // [(loc, [v])]) $ relatedLocs loc
 
 uncertain :: Status -> Bool
-uncertain (_:_:_) = True
-uncertain _ = False
+uncertain = \case
+  _:_:_ -> True
+  _ -> False
 
 certain :: Status -> Bool
-certain [_] = True
-certain _ = False
+certain = \case
+  [_] -> True
+  _ -> False
 
 setGivens :: Board -> Board
 setGivens = foldr setGiven emptyBoard . givens
-  where givens = mapMaybe given . assocs
-        given (l, [v]) = Just (l, v)
-        given _ = Nothing
-        setGiven (l, v) b = set b l v
+  where
+    givens = mapMaybe given . assocs
+    given (l, [v]) = Just (l, v)
+    given _ = Nothing
+    setGiven (l, v) b = set b l v
 
 solved :: Board -> Bool
 solved = all certain
@@ -159,11 +162,9 @@ ambiguous :: Board -> Bool
 ambiguous = (>1) . length . take 2 . solutions
 
 ambiguate :: Board -> RVar Board
-ambiguate b = do
-  let b's = filter (not . ambiguous) $ removeGivens b
-  if null b's
-    then return b
-    else randomElement b's >>= ambiguate
+ambiguate b = case filter (not . ambiguous) $ removeGivens b of
+  [] -> return b
+  bs -> randomElement bs >>= ambiguate
 
 randomPuzzle :: RVar (Board, Board)
 randomPuzzle = do
@@ -172,41 +173,46 @@ randomPuzzle = do
   return (rp, rb)
 
 showStatusAscii :: Status -> Char
-showStatusAscii []         = 'X'
-showStatusAscii [V v] = head $ show v
-showStatusAscii _          = '.'
+showStatusAscii = \case
+  [] -> 'X'
+  [V v] -> head $ show v
+  _ -> '.'
 
 showStatusUnicode :: Status -> Char
-showStatusUnicode []         = 'X'
-showStatusUnicode [V v] = head $ show v
-showStatusUnicode _          = ' '
+showStatusUnicode = \case
+  [] -> 'X'
+  [V v] -> head $ show v
+  _ -> ' '
 
 showBoardAscii :: Board -> String
 showBoardAscii = unlines . addBlankLines . map formatLine . chunksOf 9 . statuses
-  where addBlankLines = intercalate [""] . chunksOf 3
-        formatLine = intersperse ' ' . unwords . chunksOf 3
-        statuses = map showStatusAscii . elems
+  where
+    addBlankLines = intercalate [""] . chunksOf 3
+    formatLine = intersperse ' ' . unwords . chunksOf 3
+    statuses = map showStatusAscii . elems
 
 showBoardUnicode :: Board -> String
 showBoardUnicode = addCaps . unlines . addDividers . map formatLine . chunksOf 9 . cells
-  where addDividers = intercalate [bigDivider] . map (intersperse smallDivider) . chunksOf 3
-        bigDivider = "╠═══╪═══╪═══╬═══╪═══╪═══╬═══╪═══╪═══╣"
-        smallDivider = "╟───┼───┼───╫───┼───┼───╫───┼───┼───╢"
-        addCaps = (topRow ++) . (++ bottomRow)
-        topRow = "╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗\n"
-        bottomRow = "╚═══╧═══╧═══╩═══╧═══╧═══╩═══╧═══╧═══╝\n"
-        formatLine = ('║' :) . (++ "║") . intercalate "║" . map formatChunk . chunksOf 3
-        formatChunk = intercalate "│"
-        padCell s = [' ', s, ' ']
-        cells = map (padCell . showStatusUnicode) . elems
+  where
+    addDividers = intercalate [bigDivider] . map (intersperse smallDivider) . chunksOf 3
+    bigDivider = "╠═══╪═══╪═══╬═══╪═══╪═══╬═══╪═══╪═══╣"
+    smallDivider = "╟───┼───┼───╫───┼───┼───╫───┼───┼───╢"
+    addCaps = (topRow ++) . (++ bottomRow)
+    topRow = "╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗\n"
+    bottomRow = "╚═══╧═══╧═══╩═══╧═══╧═══╩═══╧═══╧═══╝\n"
+    formatLine = ('║' :) . (++ "║") . intercalate "║" . map formatChunk . chunksOf 3
+    formatChunk = intercalate "│"
+    padCell s = [' ', s, ' ']
+    cells = map (padCell . showStatusUnicode) . elems
 
 readStatus :: Char -> Either String Status
 readStatus '.' = Right vals
 readStatus c   = case mi of
     Nothing -> Left $ "Invalid input " ++ [c]
     Just i  -> Right [V $ i + 1]
-  where statusChars = ['1'..'9']
-        mi = elemIndex c statusChars
+  where
+    statusChars = ['1'..'9']
+    mi = elemIndex c statusChars
 
 readBoard :: String -> Either String Board
 readBoard cs = if length chars == length locs

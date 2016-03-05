@@ -3,20 +3,12 @@ import Sudoku
 import Control.Monad
 import Data.Random
 
-showBoard :: Options -> Board -> String
-showBoard opts
-  | useAscii opts = showBoardAscii
-  | otherwise = showBoardUnicode
-
-printSolution :: Options -> Board -> IO ()
-printSolution opts b = case solve b of
-  Nothing -> putStrLn "No solutions"
-  Just s  -> putStrLn $ showBoard opts s
-
-printSolutions :: Options -> Board -> IO ()
-printSolutions opts b = case solutions b of
-  [] -> putStrLn "No solutions"
-  ss -> mapM_ (putStrLn . showBoard opts) ss
+main :: IO ()
+main = do
+  opts <- parseOpts
+  case cmd opts of
+    Solve sOpts -> solveCommand opts sOpts
+    Generate gOpts -> generateCommand opts gOpts
 
 solveCommand :: Options -> SolveOptions -> IO ()
 solveCommand opts sOpts = do
@@ -35,9 +27,17 @@ generateCommand opts gOpts = do
   putStrLn $ showBoard opts puzzle
   unless (hideSolution gOpts) (putStrLn $ showBoard opts solution)
 
-main :: IO ()
-main = do
-  opts <- parseOpts
-  case cmd opts of
-    Solve sOpts -> solveCommand opts sOpts
-    Generate gOpts -> generateCommand opts gOpts
+showBoard :: Options -> Board -> String
+showBoard opts
+  | useAscii opts = showBoardAscii
+  | otherwise = showBoardUnicode
+
+printSolution :: Options -> Board -> IO ()
+printSolution opts b = case solve b of
+  Nothing -> putStrLn "No solutions"
+  Just s  -> putStrLn $ showBoard opts s
+
+printSolutions :: Options -> Board -> IO ()
+printSolutions opts b = case solutions b of
+  [] -> putStrLn "No solutions"
+  ss -> mapM_ (putStrLn . showBoard opts) ss

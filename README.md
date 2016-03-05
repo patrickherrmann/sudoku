@@ -1,11 +1,9 @@
 # Sudoku
 
-Build using cabal:
+Build using stack:
 
 ```
-$ cabal sandbox init
-$ cabal install --only-dependencies
-$ cabal build
+$ stack install
 ```
 
 ## Usage
@@ -17,7 +15,7 @@ To render as ascii instead of unicode, use `sudoku --ascii`.
 Provide a puzzle file, consisting of 81 characters, with `.`s for blank cells.
 
 ```
-$ ./dist/build/sudoku/sudoku solve puzzles/extreme.sudoku
+$ sudoku solve puzzles/extreme.sudoku
 ╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗
 ║ 8 │   │   ║   │   │   ║   │   │   ║
 ╟───┼───┼───╫───┼───┼───╫───┼───┼───╢
@@ -69,7 +67,7 @@ Generated puzzles have the following guarantees:
   *  Removing any clue adds additional possible solutions
 
 ```
-$ ./dist/build/sudoku/sudoku generate
+$ sudoku generate
 ╔═══╤═══╤═══╦═══╤═══╤═══╦═══╤═══╤═══╗
 ║ 5 │   │   ║   │ 4 │   ║   │ 9 │   ║
 ╟───┼───┼───╫───┼───┼───╫───┼───┼───╢
